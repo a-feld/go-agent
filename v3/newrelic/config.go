@@ -251,6 +251,9 @@ type Config struct {
 	//
 	// https://docs.newrelic.com/docs/understand-dependencies/distributed-tracing/enable-configure/enable-distributed-tracing
 	InfiniteTracing struct {
+		// When true, data is sent via OTLP
+		OtlpEnabled bool
+
 		// TraceObserver controls behavior of connecting to the Trace Observer.
 		TraceObserver struct {
 			// Host is the Trace Observer host to connect to and tells the
@@ -261,6 +264,8 @@ type Config struct {
 			// Port is the Trace Observer port to connect to. The default is
 			// 443.
 			Port int
+			// When true, traffic will not use TLS encryption
+			Insecure bool
 		}
 		// SpanEvents controls the behavior of the span events sent to the
 		// Trace Observer.
@@ -495,7 +500,7 @@ func (c Config) validateTraceObserverConfig() (*observerURL, error) {
 	}
 	return &observerURL{
 		host:   fmt.Sprintf("%s:%d", configHost, c.InfiniteTracing.TraceObserver.Port),
-		secure: configHost != localTestingHost,
+		secure: !c.InfiniteTracing.TraceObserver.Insecure,
 	}, nil
 }
 

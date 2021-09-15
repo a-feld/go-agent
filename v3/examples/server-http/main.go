@@ -45,12 +45,20 @@ func (h *handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func EnableInfiniteTracing(cfg *newrelic.Config) {
+	cfg.InfiniteTracing.OtlpEnabled = true
+	cfg.InfiniteTracing.TraceObserver.Host = "localhost"
+	cfg.InfiniteTracing.TraceObserver.Port = 4317
+	cfg.InfiniteTracing.TraceObserver.Insecure = true
+}
+
 func makeApplication() (*newrelic.Application, error) {
 	app, err := newrelic.NewApplication(
 		newrelic.ConfigAppName("HTTP Server App"),
-		newrelic.ConfigLicense(os.Getenv("NEW_RELIC_LICENSE_KEY")),
 		newrelic.ConfigDebugLogger(os.Stdout),
 		newrelic.ConfigDistributedTracerEnabled(true),
+		newrelic.ConfigFromEnvironment(),
+		EnableInfiniteTracing,
 	)
 	if nil != err {
 		return nil, err

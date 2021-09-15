@@ -161,19 +161,28 @@ func (app *app) connectTraceObserver(reply *internal.ConnectReply) {
 		endpoint = *app.config.traceObserverURL
 	}
 
-	observer, err := newTraceObserver(reply.RunID, reply.RequestHeadersMap, observerConfig{
-		endpoint:    endpoint,
-		license:     app.config.License,
-		log:         app.config.Logger,
-		queueSize:   app.config.InfiniteTracing.SpanEvents.QueueSize,
-		appShutdown: app.shutdownComplete,
-		dialer:      reply.TraceObsDialer,
-	})
-	if nil != err {
-		app.Error("unable to create trace observer", map[string]interface{}{
-			"err": err.Error(),
-		})
-		return
+	var observer traceObserver
+	{
+		var err error
+		config := observerConfig{
+			endpoint:    endpoint,
+			license:     app.config.License,
+			log:         app.config.Logger,
+			queueSize:   app.config.InfiniteTracing.SpanEvents.QueueSize,
+			appShutdown: app.shutdownComplete,
+			dialer:      reply.TraceObsDialer,
+		}
+		if app.config.InfiniteTracing.OtlpEnabled {
+			observer, err = newOtlpTraceObserver(reply.EntityGUID, config)
+		} else {
+			observer, err = newTraceObserver(reply.RunID, reply.RequestHeadersMap, config)
+		}
+		if nil != err {
+			app.Error("unable to create trace observer", map[string]interface{}{
+				"err": err.Error(),
+			})
+			return
+		}
 	}
 	app.Debug("trace observer connected", map[string]interface{}{
 		"url": app.config.traceObserverURL.host,
